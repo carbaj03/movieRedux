@@ -2,7 +2,6 @@ package com.acv.movieredux.domain
 
 import com.acv.movieredux.data.APIService
 import com.acv.movieredux.redux.StoreState
-import kotlinx.serialization.Serializable
 
 data class AppState(
     val moviesState: MoviesState = MoviesState(),
@@ -32,6 +31,6 @@ enum class MoviesMenu(
 
     companion object {
         fun allValues(): List<MoviesMenu> = values().toList()
-        fun fromOrdinal(ordinal: Int): MoviesMenu = MoviesMenu.values()[ordinal]
+        fun fromOrdinal(ordinal: Int): MoviesMenu = values()[ordinal]
     }
 }

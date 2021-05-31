@@ -9,6 +9,7 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import com.acv.movieredux.domain.AppState
+import com.acv.movieredux.domain.MoviesMenu
 import com.acv.movieredux.redux.StoreProvider
 import com.acv.movieredux.redux.provide
 import com.acv.movieredux.ui.screen.HomeScreen
@@ -21,13 +22,15 @@ class MainActivity : ComponentActivity() {
         setContent {
             Store {
                 MovieReduxTheme {
-                    // A surface container using the 'background' color from the theme
                     Surface(color = MaterialTheme.colors.background) {
                         HomeScreen()
                     }
                 }
             }
         }
+
+        store.dispatch(movieActions.fetchMoviesMenuList(list = MoviesMenu.nowPlaying, page = 1))
+        store.dispatch(movieActions.fetchGenres())
     }
 }
 
