@@ -1,3 +1,9 @@
 <resources>
     <string name="app_name">MovieRedux</string>
+
+    <string name="movies">Movies</string>
+    <string name="discover">Discover</string>
+    <string name="my_list">My Lists</string>
+    <string name="fan_club">Fan Club</string>
+
 </resources>
