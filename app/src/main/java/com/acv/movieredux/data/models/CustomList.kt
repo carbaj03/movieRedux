@@ -10,7 +10,7 @@ data class CustomList(
     val id: String,
     var name: String,
     var cover: String? = null,
-    var movies: MutableSet<String>
+    var movies: Set<String>
 ) {
     fun sortedMoviesIds(by: MoviesSort, state: AppState) =
         movies.sortedMoviesIds(by, state)

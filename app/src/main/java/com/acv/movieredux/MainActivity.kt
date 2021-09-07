@@ -12,7 +12,7 @@ import com.acv.movieredux.domain.AppState
 import com.acv.movieredux.domain.MoviesMenu
 import com.acv.movieredux.redux.StoreProvider
 import com.acv.movieredux.redux.provide
-import com.acv.movieredux.ui.screen.HomeScreen
+import com.acv.movieredux.ui.home.HomeScreen
 import com.acv.movieredux.ui.theme.MovieReduxTheme
 
 class MainActivity : ComponentActivity() {

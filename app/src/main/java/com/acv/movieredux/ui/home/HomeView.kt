@@ -1,4 +1,4 @@
-package com.acv.movieredux.ui.screen
+package com.acv.movieredux.ui.home
 
 import androidx.annotation.StringRes
 import androidx.compose.material.*
@@ -15,6 +15,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.acv.movieredux.R
+import com.acv.movieredux.ui.moviewhome.MoviesHome
 
 
 sealed class Screen(val route: String, @StringRes val resourceId: Int) {
@@ -44,7 +45,9 @@ fun HomeScreen() {
     val navController = rememberNavController()
     Scaffold(
         bottomBar = {
-            BottomNavigation {
+            BottomNavigation(
+                backgroundColor = MaterialTheme.colors.primarySurface,
+            ) {
                 val navBackStackEntry by navController.currentBackStackEntryAsState()
                 val currentRoute = navBackStackEntry?.destination?.route ?: Screen.Movies.route
                 items.forEach { screen ->
@@ -77,7 +80,8 @@ fun HomeScreen() {
             startDestination = Screen.Movies.route
         ) {
             composable(Screen.Movies.route) {
-                MoviesScreen()
+//                MoviesScreen()
+                MoviesHome()
             }
             composable(Screen.Discover.route) {
 

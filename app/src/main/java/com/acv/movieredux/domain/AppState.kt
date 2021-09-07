@@ -34,3 +34,5 @@ enum class MoviesMenu(
         fun fromOrdinal(ordinal: Int): MoviesMenu = values()[ordinal]
     }
 }
+
+fun allMovieMenuValues() = MoviesMenu.values().toList()

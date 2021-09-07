@@ -1,5 +1,6 @@
 package com.acv.movieredux.domain.reducers
 
+import com.acv.movieredux.data.models.CustomList
 import com.acv.movieredux.data.models.Genre
 import com.acv.movieredux.data.models.Movie
 import com.acv.movieredux.data.models.MovieUserMeta
@@ -8,171 +9,213 @@ import com.acv.movieredux.domain.actions.MoviesActions
 import com.acv.movieredux.domain.actions.PeopleActions
 import com.soywiz.klock.DateTime
 
-fun moviesStateReducer(state: MoviesState, action: Any): MoviesState {
-    var state = state
+fun moviesStateReducer(state: MoviesState, action: Any): MoviesState =
     when (action) {
         is MoviesActions.SetMovieMenuList -> {
-            if (action.page == 1) {
-                state = state.copy(
-                    moviesList = state.moviesList.replace(action.moviesMenu, action.response.results.map { it.id })
+            val a = if (action.page == 1) {
+                state.copy(
+                    moviesList = state.moviesList + (action.moviesMenu to action.response.results.map { it.id })
                 )
             } else {
                 var list = state.moviesList[action.moviesMenu]
                 if (list != null) {
                     list = list.plus(action.response.results.map { it.id })
-                    state = state.copy(
-                        moviesList = state.moviesList.replace(action.moviesMenu, list)
+                    state.copy(
+                        moviesList = state.moviesList + (action.moviesMenu to list)
                     )
                 } else {
-                    state = state.copy(
-                        moviesList = state.moviesList.replace(action.moviesMenu, action.response.results.map { it.id })
+                    state.copy(
+                        moviesList = state.moviesList + (action.moviesMenu to action.response.results.map { it.id })
                     )
                 }
             }
-            state = state.copy(
-                movies = state.movies.plus(action.response.results)
-            )
+            state.copy(movies = a.movies.plus(action.response.results))
         }
-        is MoviesActions.SetDetail -> {
-            state = state.copy(
-                movies = state.movies.replace(action.movie, action.response)
-            )
-        }
+        is MoviesActions.SetDetail -> state.copy(
+            movies = state.movies + (action.movie to action.response)
+        )
         is MoviesActions.SetRecommended -> {
             state.recommended[action.movie] = action.response.results.map { it.id }
-            state = mergeMovies(movies = action.response.results, state = state)
+            mergeMovies(movies = action.response.results, state = state)
         }
         is MoviesActions.SetSimilar -> {
             state.similar[action.movie] = action.response.results.map { it.id }
-            state = mergeMovies(movies = action.response.results, state = state)
+            mergeMovies(movies = action.response.results, state = state)
         }
         is MoviesActions.SetSearch -> {
-            if (action.page == 1) {
-                state.search[action.query] = action.response.results.map { it.id }.toMutableList()
+            val a = if (action.page == 1) {
+                state.copy(search = state.search + (action.query to action.response.results.map { it.id }))
             } else {
-                state.search[action.query]?.addAll(action.response.results.map { it.id })
+                state.copy(search = state.search + (action.query to state.search[action.query]!!.plus(action.response.results.map { it.id })))
             }
-            state = mergeMovies(movies = action.response.results, state = state)
+            mergeMovies(movies = action.response.results, state = a)
         }
-        is MoviesActions.SetSearchKeyword -> state.searchKeywords[action.query] = action.response.results
+        is MoviesActions.SetSearchKeyword ->
+            state.copy(searchKeywords = state.searchKeywords + (action.query to action.response.results))
         is MoviesActions.AddToWishlist -> {
-            state.wishlist = state.wishlist.plus(action.movie)
-            state.seenlist = state.seenlist.minus(action.movie)
             val meta = state.moviesUserMeta[action.movie] ?: MovieUserMeta()
             meta.addedToList = DateTime.now()
-            state.moviesUserMeta[action.movie] = meta
+            state.copy(
+                wishlist = state.wishlist.plus(action.movie),
+                seenlist = state.seenlist.minus(action.movie),
+                moviesUserMeta = state.moviesUserMeta + (action.movie to meta)
+            )
         }
-        is MoviesActions.RemoveFromWishlist -> state.wishlist = state.wishlist.minus(action.movie)
+        is MoviesActions.RemoveFromWishlist ->
+            state.copy(wishlist = state.wishlist.minus(action.movie))
         is MoviesActions.AddToSeenList -> {
-            state.seenlist = state.seenlist.plus(action.movie)
-            state.wishlist = state.wishlist.minus(action.movie)
             val meta = state.moviesUserMeta[action.movie] ?: MovieUserMeta()
             meta.addedToList = DateTime.now()
-            state.moviesUserMeta[action.movie] = meta
+            state.copy(
+                seenlist = state.seenlist.plus(action.movie),
+                wishlist = state.wishlist.minus(action.movie),
+                moviesUserMeta = state.moviesUserMeta + (action.movie to meta),
+            )
         }
-        is MoviesActions.RemoveFromSeenList -> state.seenlist = state.seenlist.minus(action.movie)
-        is MoviesActions.AddMovieToCustomList -> state.customLists[action.list]?.movies?.add(action.movie)
+        is MoviesActions.RemoveFromSeenList ->
+            state.copy(seenlist = state.seenlist.minus(action.movie))
+        is MoviesActions.AddMovieToCustomList -> {
+            val a: CustomList = state.customLists[action.list]!!
+            val c: CustomList = a.copy(movies = state.customLists[action.list]!!.movies.plus(action.movie))
+            state.copy(
+                customLists = state.customLists + (action.list to c)
+            )
+        }
         is MoviesActions.AddMoviesToCustomList -> {
-            val list = state.customLists[action.list]
+            var list: CustomList? = state.customLists[action.list]
             if (list != null) {
                 for (movie in action.movies) {
-                    list.movies.add(movie)
+                    list = list!!.copy(movies = list!!.movies.plus(movie))
                 }
-                state.customLists[action.list] = list
-            }
+                state.copy(customLists = state.customLists + (action.list to list!!))
+            } else state
         }
-        is MoviesActions.RemoveMovieFromCustomList -> state.customLists[action.list]?.movies?.remove(action.movie)
+        is MoviesActions.RemoveMovieFromCustomList -> {
+            val a: CustomList = state.customLists[action.list]!!
+            val c: CustomList = a.copy(movies = state.customLists[action.list]!!.movies.minus(action.movie))
+            state.copy(
+                customLists = state.customLists + (action.list to c)
+            )
+        }
         is MoviesActions.SetMovieForGenre -> {
-            if (action.page == 1) {
-                state.withGenre[action.genre.id] = action.response.results.map { it.id }.toMutableList()
-            } else {
-                state.withGenre[action.genre.id]?.addAll(action.response.results.map { it.id })
-            }
-            state = mergeMovies(movies = action.response.results, state = state)
+            val s = state.copy(
+                withGenre = if (action.page == 1) {
+                    state.withGenre + (action.genre.id to action.response.results.map { it.id })
+                } else {
+                    state.withGenre + (action.genre.id to state.withGenre[action.genre.id]!!.plus(action.response.results.map { it.id }))
+                }
+            )
+            mergeMovies(movies = action.response.results, state = s)
         }
         is MoviesActions.SetRandomDiscover -> {
-            if (state.discover.isEmpty()) {
-                state.discover = action.response.results.map { it.id }.toMutableList()
-            } else if (state.discover.size < 10) {
-                state.discover.addAll(0, action.response.results.map { it.id })
-            }
-            state = mergeMovies(movies = action.response.results, state = state)
-            state.discoverFilter = action.filter
+            val s = state.copy(
+                discover = if (state.discover.isEmpty()) {
+                    action.response.results.map { it.id }.toMutableList()
+                } else if (state.discover.size < 10) {
+                    action.response.results.map { it.id } + state.discover
+                } else {
+                    state.discover
+                },
+                discoverFilter = action.filter
+            )
+            mergeMovies(movies = action.response.results, state = s)
         }
-        is MoviesActions.SetMovieReviews -> state.reviews[action.movie] = action.response.results
+        is MoviesActions.SetMovieReviews ->
+            state.copy(reviews = state.reviews + (action.movie to action.response.results))
         is MoviesActions.SetMovieWithCrew -> {
-            state.withCrew[action.crew] = action.response.results.map { it.id }
-            state = mergeMovies(movies = action.response.results, state = state)
+            val a: List<String> = action.response.results.map { it.id }
+            val s = state.copy(withCrew = state.withCrew + (action.crew to a))
+            mergeMovies(movies = action.response.results, state = s)
         }
         is MoviesActions.SetMovieWithKeyword -> {
-            if (action.page == 1) {
-                state.withKeywords[action.keyword] = action.response.results.map { it.id }.toMutableList()
-            } else {
-                state.withKeywords[action.keyword]?.addAll(action.response.results.map { it.id })
-            }
-            state = mergeMovies(movies = action.response.results, state = state)
+            val s = state.copy(
+                withKeywords = if (action.page == 1) {
+                    state.withKeywords + (action.keyword to action.response.results.map { it.id })
+                } else {
+                    state.withKeywords + (action.keyword to state.withKeywords[action.keyword]!!.plus(action.response.results.map { it.id }))
+                }
+            )
+            mergeMovies(movies = action.response.results, state = s)
         }
-        is MoviesActions.AddCustomList -> state.customLists[action.list.id] = action.list
+        is MoviesActions.AddCustomList ->
+            state.copy(
+                customLists = state.customLists + (action.list.id to action.list)
+            )
         is MoviesActions.EditCustomList -> {
             val list = state.customLists[action.list]
-            if (list != null) {
-                val cover = action.cover
-                if (cover != null) {
-                    list.cover = cover
+            state.copy(
+                customLists = if (list != null) {
+                    val cover = action.cover
+                    if (cover != null) {
+                        list.cover = cover
+                    }
+                    val title = action.title
+                    if (title != null) {
+                        list.name = title
+                    }
+                    state.customLists + (action.list to list)
+                } else {
+                    state.customLists
                 }
-                val title = action.title
-                if (title != null) {
-                    list.name = title
-                }
-                state.customLists[action.list] = list
-            }
+            )
         }
-        is MoviesActions.RemoveCustomList -> state.customLists.remove(action.list)
-        is MoviesActions.PopRandromDiscover -> state.discover.removeAt(state.discover.size - 1)
-        is MoviesActions.PushRandomDiscover -> state.discover.add(action.movie)
+        is MoviesActions.RemoveCustomList ->
+            state.copy(customLists = state.customLists.minus(action.list))
+        is MoviesActions.PopRandromDiscover ->
+            state.copy(discover = state.discover.drop(1))
+        is MoviesActions.PushRandomDiscover ->
+            state.copy(discover = state.discover.plus(action.movie))
         is MoviesActions.ResetRandomDiscover -> {
-            state.discoverFilter = null
-            state.discover = mutableListOf()
+            state.copy(
+                discover = mutableListOf(),
+                discoverFilter = null,
+            )
         }
-        is MoviesActions.SetGenres -> {
-            state.genres = action.genres.toMutableList()
-            state.genres.add(0, Genre(id = "-1", name = "Random"))
-        }
+        is MoviesActions.SetGenres ->
+            state.copy(
+                genres = listOf(Genre(id = "-1", name = "Random")) + action.genres,
+            )
         is PeopleActions.SetPeopleCredits -> {
             val crews = action.response.crew
-            if (crews != null) {
-                state = mergeMovies(movies = crews, state = state)
-            }
             val casts = action.response.cast
-            if (casts != null) {
-                state = mergeMovies(movies = casts, state = state)
+
+            when {
+                crews != null && casts != null -> {
+                    mergeMovies(movies = crews, state = mergeMovies(movies = casts, state = state))
+                }
+                crews != null -> mergeMovies(movies = crews, state = state)
+                casts != null -> mergeMovies(movies = casts, state = state)
+                else -> state
             }
         }
-        is MoviesActions.SaveDiscoverFilter -> state.savedDiscoverFilters.add(action.filter)
-        is MoviesActions.ClearSavedDiscoverFilters -> state.savedDiscoverFilters = mutableListOf()
+        is MoviesActions.SaveDiscoverFilter ->
+            state.copy(
+                savedDiscoverFilters = state.savedDiscoverFilters.plus(action.filter)
+            )
+        is MoviesActions.ClearSavedDiscoverFilters ->
+            state.copy(
+                savedDiscoverFilters = mutableListOf()
+            )
         else -> state
     }
 
-    return state
-}
-
-operator fun Map<String, Movie>.plus(rhs: List<Movie>) : Map<String, Movie> {
+operator fun Map<String, Movie>.plus(rhs: List<Movie>): Map<String, Movie> {
     var map = this
     for (movie in rhs) {
-        map = map.replace(movie.id, movie)
+        map + (movie.id to movie)
     }
     return map
 }
 
-fun <K, V> Map<K, V>.replace(key: K, values: V) =
-    toMutableMap().apply { this[key] = values }
+//fun <K, V> Map<K, V>.replace(key: K, values: V): Map<K, V> =
+//    toMutableMap().apply { this[key] = values }
 
 private fun mergeMovies(movies: List<Movie>, state: MoviesState): MoviesState {
-    var state = state
+    val map = state.movies.toMutableMap()
     for (movie in movies) {
         if (state.movies[movie.id] == null) {
-            state = state.copy(movies = state.movies.replace(movie.id, movie))
+            map[movie.id] = movie
         }
     }
-    return state
+    return state.copy(movies = map)
 }

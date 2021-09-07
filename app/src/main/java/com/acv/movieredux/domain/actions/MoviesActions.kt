@@ -14,12 +14,11 @@ import com.acv.movieredux.redux.thunk
 import com.acv.movieredux.ui.MoviesSort
 import com.acv.movieredux.ui.preferences.AppUserDefaults
 import com.example.common.models.DiscoverFilter
-import com.acv.movieredux.data.models.Genre
 import kotlinx.serialization.Serializable
 
 class MoviesActionsAsync(
     private val apiService: APIService,
-    private val appUserDefaults: AppUserDefaults,
+    val appUserDefaults: AppUserDefaults,
 ) {
     fun fetchMoviesMenuList(list: MoviesMenu, page: Int) =
         thunk<AppState> { dispatch, _, _ ->
